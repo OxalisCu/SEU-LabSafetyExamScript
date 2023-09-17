@@ -19,6 +19,7 @@ import fs from 'fs';
 //   sbtn.click();
 // }
 
+// 实验室安全网站 cookie
 const cookies = [
   {
     url: 'http://safe.seu.edu.cn/',
@@ -32,6 +33,7 @@ const cookies = [
   }
 ]
 
+// 对获取到的题目字符串进行正则匹配，获取题目、答案信息
 function dealQ (input) {
   const strMatch = input.match(/^(\d+)\.\s*\[(.*)\]\s*(.*)(?:参考答案:)\s*(.*)(?:解题分析：)(.*)/);
   let [_, index, type, qo, answer, explain] = strMatch;
@@ -61,16 +63,19 @@ function dealQ (input) {
   return obj;
 }
 
+// 爬取每一页数据，自动跳转下一页
 const save = async (page, callback) => {
   await page.waitForSelector('iframe#fnode4');
   const frames = await page.frames();
   const frame = frames.find(f => f.name() === 'fnode4');
+  // iframe 是否正确获取
   console.log(!!frame);
   const tools = await frame.$('#simplepagingtoolbar-1012-targetEl');
   const nextBtn = await tools.$('a[data-qtip=下一页]');
   const total = await tools.$eval('#tbtext-1018', el => Number.parseInt(el.textContent.match(/\d+/g) || '0'));
   let qfs = [];
 
+  // 获取题目
   const parseQ = async () => {
     await frame.waitForSelector('table#gridview-1011-table');
     const qs = await frame.$$eval('table#gridview-1011-table tr span', el => el.map(item => {
@@ -81,6 +86,8 @@ const save = async (page, callback) => {
     await nextBtn.click();
   }
 
+  // 爬取数据，每隔 1s 自动跳转下一页
+  // 不设置间隔好像每页数据加载有问题，所以设置了一个等待时间（不会其他方法
   let cnt = 0;
   let timer = setInterval(async () => {
     if (cnt >= total && timer) {
